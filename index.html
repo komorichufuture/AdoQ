@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adoクイズ 100問</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: #0d0d1a;
+    color: #e8e8f0;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d0a4e 50%, #1a0a2e 100%);
+    border-bottom: 2px solid #7b2fff;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: 2.2rem;
+    background: linear-gradient(90deg, #bf80ff, #ff6fd8, #bf80ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  header p { color: #a080c0; font-size: 0.9rem; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    justify-content: center; align-items: center;
+    padding: 18px 24px;
+    background: #13102a;
+    border-bottom: 1px solid #2a2050;
+  }
+  .controls button {
+    padding: 8px 18px; border: none; border-radius: 20px;
+    cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #7b2fff, #d94fd5);
+    color: white;
+  }
+  .btn-secondary {
+    background: #2a2050; color: #c0a0e0; border: 1px solid #4a3080;
+  }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-secondary:hover { background: #3a2a70; }
+  .score-badge {
+    background: #1e1540; border: 1px solid #5a3a90;
+    border-radius: 20px; padding: 6px 16px;
+    color: #d0a0ff; font-size: 0.9rem; font-weight: 700;
+  }
+  .filter-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .filter-btns button {
+    padding: 5px 12px; font-size: 0.75rem; border-radius: 14px;
+    background: #1e1540; color: #9070c0; border: 1px solid #3a2a60;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btns button.active {
+    background: #4a1a8a; color: #e0c0ff; border-color: #9040e0;
+  }
+
+  .quiz-container {
+    max-width: 800px; margin: 0 auto; padding: 20px 16px 60px;
+  }
+  .category-header {
+    display: flex; align-items: center; gap: 10px;
+    margin: 28px 0 14px;
+    font-size: 1rem; font-weight: 700; color: #bf80ff;
+    letter-spacing: 0.05em;
+  }
+  .category-header::before {
+    content: ''; display: block; height: 2px; width: 24px;
+    background: linear-gradient(90deg, #7b2fff, #d94fd5);
+    border-radius: 2px;
+  }
+
+  .quiz-card {
+    background: #14112a;
+    border: 1px solid #2a2050;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .quiz-card:hover { border-color: #4a2880; }
+  .quiz-card.answered-correct { border-color: #2a8a4a; background: #0e1e14; }
+  .quiz-card.answered-wrong { border-color: #8a2a2a; background: #1e0e0e; }
+
+  .q-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    cursor: pointer;
+  }
+  .q-num {
+    min-width: 36px; height: 36px;
+    background: linear-gradient(135deg, #3a1a6a, #6a1a9a);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 800; color: #d0a0ff;
+    flex-shrink: 0;
+  }
+  .q-text {
+    flex: 1; font-size: 0.95rem; line-height: 1.6; color: #d0c0e8; padding-top: 7px;
+  }
+  .difficulty {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0; margin-top: 9px;
+  }
+  .diff-easy { background: #0e3020; color: #40c070; border: 1px solid #206040; }
+  .diff-mid  { background: #1a1e40; color: #6080e0; border: 1px solid #303880; }
+  .diff-hard { background: #2e0e30; color: #d060d0; border: 1px solid #601060; }
+
+  .answer-area {
+    margin-top: 14px; display: none;
+  }
+  .answer-area.open { display: block; }
+  .answer-area .choices {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 12px;
+  }
+  @media (max-width: 500px) {
+    .answer-area .choices { grid-template-columns: 1fr; }
+  }
+  .choice-btn {
+    background: #1e1840; border: 1px solid #3a2a60;
+    border-radius: 8px; padding: 10px 14px;
+    color: #b090d0; cursor: pointer; text-align: left;
+    font-size: 0.85rem; transition: all 0.15s; line-height: 1.4;
+  }
+  .choice-btn:hover:not(:disabled) { background: #2a1e5a; border-color: #6a40a0; color: #e0c8ff; }
+  .choice-btn.correct { background: #0a2e18; border-color: #30a060; color: #60e090; }
+  .choice-btn.wrong   { background: #2e0a0a; border-color: #a03030; color: #e06060; }
+  .choice-btn:disabled { cursor: default; }
+
+  .answer-reveal {
+    background: #1a1040; border-left: 3px solid #7b2fff;
+    border-radius: 6px; padding: 12px 14px;
+    font-size: 0.85rem; color: #c0a0e0; line-height: 1.6;
+  }
+  .answer-reveal .ans-label { color: #ff80e0; font-weight: 700; margin-bottom: 4px; }
+  .answer-reveal .commentary { color: #9080b0; margin-top: 6px; font-size: 0.82rem; }
+
+  .toggle-hint {
+    background: none; border: 1px solid #4a2880; border-radius: 14px;
+    color: #9060c0; font-size: 0.78rem; padding: 4px 12px;
+    cursor: pointer; margin-top: 10px; transition: all 0.2s;
+  }
+  .toggle-hint:hover { background: #2a1a50; }
+
+  .progress-bar-wrap {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #0d0d1a; border-top: 1px solid #2a2050;
+    padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+    z-index: 100;
+  }
+  .progress-bar { flex: 1; height: 6px; background: #1e1540; border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #7b2fff, #d94fd5);
+    border-radius: 3px; transition: width 0.4s ease;
+  }
+  .progress-text { color: #9070c0; font-size: 0.8rem; white-space: nowrap; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎤 Ado クイズ 100問</h1>
+  <p>ファクトチェック済み ／ 多ジャンル対応</p>
+</header>
+
+<div class="controls">
+  <span class="score-badge">正解: <span id="correct-count">0</span> / <span id="answered-count">0</span>問</span>
+  <button class="btn-primary" onclick="expandAll()">全問を開く</button>
+  <button class="btn-secondary" onclick="resetAll()">リセット</button>
+  <div class="filter-btns">
+    <button class="active" onclick="filterCat('all', this)">すべて</button>
+    <button onclick="filterCat('profile', this)">プロフィール</button>
+    <button onclick="filterCat('debut', this)">デビュー・活動歴</button>
+    <button onclick="filterCat('songs', this)">楽曲</button>
+    <button onclick="filterCat('onepiece', this)">ONE PIECE</button>
+    <button onclick="filterCat('album', this)">アルバム</button>
+    <button onclick="filterCat('records', this)">記録・受賞</button>
+    <button onclick="filterCat('live', this)">ライブ・活動</button>
+  </div>
+</div>
+
+<div class="quiz-container" id="quiz-container"></div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  <span class="progress-text" id="progress-text">0 / 100</span>
+</div>
+
+<script>
+const quizData = [
+  // ─── プロフィール ───────────────────────────────────────
+  { cat:"profile", diff:"easy", q:"Adoの生年月日は？",
+    choices:["2001年10月24日","2002年10月24日","2003年5月12日","2002年3月15日"],
+    ans:1, comment:"2002年10月24日生まれ。2020年のメジャーデビュー時はまだ17歳（高校3年生）でした。" },
+  { cat:"profile", diff:"easy", q:"Adoの出身地はどこ？",
+    choices:["大阪府","神奈川県","東京都","埼玉県"],
+    ans:2, comment:"東京都出身です。" },
+  { cat:"profile", diff:"mid", q:"芸名「Ado」の由来となった言葉は、どの日本の古典芸能から来ている？",
+    choices:["能","歌舞伎","狂言","落語"],
+    ans:2, comment:"狂言の世界では主役を「シテ」、脇役を「アド」と呼びます。小学校の授業で聞き、響きのカッコよさから採用しました。" },
+  { cat:"profile", diff:"mid", q:"Adoが「Ado」という名前を知ったのは何の授業がきっかけ？",
+    choices:["理科","社会","体育","国語"],
+    ans:3, comment:"小学校の国語の授業で狂言「柿山伏」を学んだ際に出会いました。" },
+  { cat:"profile", diff:"hard", q:"Adoが音楽に興味を持ち始めたのは何年？またそのきっかけは？",
+    choices:["2012年・スマホアプリ","2014年・Nintendo 3DSのニコニコ動画ソフト","2016年・YouTubeのPV","2013年・親の影響"],
+    ans:1, comment:"2014年、Nintendo 3DSにニコニコ動画のソフトがリリースされたことで音楽に興味を持ち始めました。" },
+  { cat:"profile", diff:"mid", q:"英語の「ado」にはどんな意味がある？",
+    choices:["夢・希望","騒ぎ・面倒","静寂・平和","歌・音楽"],
+    ans:1, comment:"英語の「ado」には「騒ぎ・骨折り・面倒」という意味があり、Adoさんは「自分に合っている気がする」と語っています。" },
+  { cat:"profile", diff:"easy", q:"Adoが所属する芸能事務所（マネジメント会社）はどこ？",
+    choices:["エイベックス","Cloud Nine（クラウドナイン）","ソニーミュージック","ジャニーズ"],
+    ans:1, comment:"Cloud Nine（クラウドナイン）株式会社が所属事務所です。" },
+  { cat:"profile", diff:"mid", q:"Adoのレコードレーベルは？",
+    choices:["Epic Records","EMI Records","Virgin Music（ユニバーサルミュージック）","Pony Canyon"],
+    ans:2, comment:"ユニバーサルミュージックジャパン内のサブレーベル「Virgin Music」からデビューしました。" },
+  { cat:"profile", diff:"hard", q:"Adoが歌い手活動中、録音をしていた場所は？",
+    choices:["スタジオを借りていた","クローゼットに防音材を貼って録音","押し入れに毛布を敷いて録音","学校の音楽室"],
+    ans:1, comment:"ニコニコ動画の歌い手時代、クローゼットにネットで購入した防音材を貼り付けて録音していました。「うたってみたアルバム」のカバーアートにもその様子が描かれています。" },
+  { cat:"profile", diff:"easy", q:"Adoは「歌い手」として何年から活動を開始した？",
+    choices:["2014年","2015年","2016年","2017年"],
+    ans:3, comment:"2017年からニコニコ動画で歌ってみた動画の投稿を開始しました。" },
+
+  // ─── デビュー・活動歴 ───────────────────────────────────
+  { cat:"debut", diff:"easy", q:"Adoのメジャーデビュー曲は？",
+    choices:["ギラギラ","踊","うっせぇわ","阿修羅ちゃん"],
+    ans:2, comment:"「うっせぇわ」が2020年10月にデジタル配信でリリースされ、メジャーデビューとなりました。" },
+  { cat:"debut", diff:"mid", q:"「うっせぇわ」のリリース日はいつ？",
+    choices:["2020年10月23日","2020年10月15日","2020年11月1日","2021年1月1日"],
+    ans:1, comment:"「うっせぇわ」は2020年10月23日にデジタル配信でリリースされました（デビュー発表は10月15日）。" },
+  { cat:"debut", diff:"mid", q:"Adoがニコニコ動画に最初に投稿したカバー曲は？",
+    choices:["うっせぇわ","君の体温","ギラギラ","シャルル"],
+    ans:1, comment:"2017年1月10日に投稿した「君の体温」（クワガタP作）がニコニコ動画への初投稿です。" },
+  { cat:"debut", diff:"hard", q:"Adoが2019年に参加した、Kujiraの配信シングルのタイトルは？",
+    choices:["シカバネーゼ","パレット4","金木犀","コールボーイ"],
+    ans:2, comment:"2019年12月23日リリースのKujiraのデジタルシングル「金木犀」にAdo がボーカルとして参加しました。" },
+  { cat:"debut", diff:"hard", q:"Adoがメジャーデビュー前の2020年に参加したコンピレーションアルバムは？",
+    choices:["Rainbow","Palette4","Cover100","Vocaloid Best"],
+    ans:1, comment:"2020年5月、Pony Canyonのコンピレーションアルバム「Palette4」に参加し、「Call Boy」と「絶えまなく藍色」の2曲を収録しました。" },
+  { cat:"debut", diff:"easy", q:"「うっせぇわ」の作詞・作曲を担当したボカロPは誰？",
+    choices:["teniwoha","syudou","jon-yakitory","DECO*27"],
+    ans:1, comment:"「うっせぇわ」の作詞・作曲・編曲はsyudou（しゅどう）が担当しました。" },
+  { cat:"debut", diff:"mid", q:"Adoが小学6年生の頃、ニコニコ動画で歌い手に興味を持った理由は？",
+    choices:["好きな歌手がいた","顔が見えないのに歌を聴いてもらえると知った","学校の友達に勧められた","親が歌い手だった"],
+    ans:1, comment:"「顔がわからないのにこんなに歌を聴いてもらえる人がいるんだ」と気づき、興味を持ったとのことです。" },
+  { cat:"debut", diff:"mid", q:"メジャーデビュー時のAdoの年齢は？",
+    choices:["15歳","16歳","17歳","18歳"],
+    ans:2, comment:"2020年10月デビュー時は17歳（高校3年生）でした。" },
+  { cat:"debut", diff:"hard", q:"Jon-YakitoryによるデジタルシングルでAdoがボーカルを担当した楽曲は？",
+    choices:["シカバネーゼ","ナイトジョガー","ヒバナ","金木犀"],
+    ans:0, comment:"2020年3月29日リリースのJon-Yakitoryの「シカバネーゼ」にAdoがボーカルとして参加しました。" },
+  { cat:"debut", diff:"easy", q:"Adoが2021年3月に高校を卒業したことを報告した際に使ったSNSは？",
+    choices:["Instagram","TikTok","X（旧Twitter）","YouTube"],
+    ans:2, comment:"X（旧Twitter）で「卒業しました……」と投稿して報告しました。" },
+
+  // ─── 楽曲 ───────────────────────────────────────────────
+  { cat:"songs", diff:"mid", q:"「ギラギラ」の作詞・作曲を担当したボカロPは誰？",
+    choices:["syudou","teniwoha","jon-yakitory","れるりり"],
+    ans:1, comment:"「ギラギラ」はボカロP・teniwohaが作詞・作曲しました。2021年2月14日リリースの3rdシングルです。" },
+  { cat:"songs", diff:"mid", q:"「踊」はどのNHK番組のテーマとして使用された？",
+    choices:["みんなのうた","NHKスペシャル","夜光音楽 ボカロP 5min.","紅白歌合戦"],
+    ans:2, comment:"「踊」はNHK総合「夜光音楽 ボカロP 5min.」のテーマソングとして使われました。" },
+  { cat:"songs", diff:"easy", q:"「うっせぇわ」のMVがYouTubeで1億再生を達成したのは、リリースから何日後？",
+    choices:["78日後","100日後","148日後","200日後"],
+    ans:2, comment:"2021年3月20日に1億再生を突破。リリースから148日後でした。" },
+  { cat:"songs", diff:"mid", q:"「うっせぇわ」がBillboard Japan Hot 100で1位を獲得したのはいつ？",
+    choices:["2020年12月","2021年1月","2021年2月","2021年3月"],
+    ans:3, comment:"2021年3月15日にBillboard Japan Hot 100で1位を獲得しました。" },
+  { cat:"songs", diff:"hard", q:"「阿修羅ちゃん」を作詞・作曲したのは誰？",
+    choices:["syudou","Ado自身","DECO*27","Kurage-P"],
+    ans:3, comment:"「阿修羅ちゃん」の作詞・作曲はKurage-P（くらげP）が担当しました。" },
+  { cat:"songs", diff:"mid", q:"Adoが「ちびまる子ちゃん」の新OPとして歌った楽曲は？",
+    choices:["うっせぇわ","踊","おどるポンポコリン","新時代"],
+    ans:2, comment:"AdoはEPO作詞作曲の名曲「おどるポンポコリン」を「ちびまる子ちゃん」の新OPとして歌いました。編曲はヒャダインが担当。" },
+  { cat:"songs", diff:"mid", q:"「レディメイド」はどのメディアのエンディングテーマとして使用された？",
+    choices:["ドラゴンボール超","AbemaPrime","ちびまる子ちゃん","ONE PIECE"],
+    ans:1, comment:"「レディメイド」はAbemaTV「AbemaPrime」のエンディングテーマです。" },
+  { cat:"songs", diff:"easy", q:"Adoのデビュー曲「うっせぇわ」はどんなテーマを歌った楽曲？",
+    choices:["恋愛への期待","社会や大人への不満・反抗","夢への挑戦","友情の大切さ"],
+    ans:1, comment:"社会や大人への不平不満を、毒々しくも透明感のある声で歌い上げた楽曲です。" },
+  { cat:"songs", diff:"hard", q:"Adoが自ら作詞・作曲を手掛け自身初のCDシングル（2024年10月発売）の収録曲として含まれる楽曲は？",
+    choices:["新時代","桜日和とタイムマシン","うっせぇわ","残夢"],
+    ans:1, comment:"2024年10月に発売した自身初のCDシングル『桜日和とタイムマシン with 初音ミク／初夏』に「初夏」としてAdo作詞作曲の楽曲が収録されました。" },
+  { cat:"songs", diff:"hard", q:"「うっせぇわ」がBillboard Japanストリーミングソングスで1億再生を達成するまでの週数は？",
+    choices:["12週","17週","22週","30週"],
+    ans:1, comment:"「うっせぇわ」はチャートインから17週で1億再生を達成。これはBillboard Japan史上6番目の速さで、ソロ歌手としては最年少でした。" },
+
+  // ─── ONE PIECE FILM RED ─────────────────────────────────
+  { cat:"onepiece", diff:"easy", q:"映画「ONE PIECE FILM RED」でAdoが歌唱を担当したキャラクターは？",
+    choices:["ナミ","ニコ・ロビン","ウタ","ビビ"],
+    ans:2, comment:"Adoはキャラクター「ウタ」の歌唱を担当しました。セリフ部分は声優の名塚佳織が担当しています。" },
+  { cat:"onepiece", diff:"easy", q:"ONE PIECE FILM REDのイメージソングとしてリリースされた楽曲は？",
+    choices:["私は最強","新時代","逆光","風のゆくえ"],
+    ans:1, comment:"「新時代」が映画のイメージソングとして2022年6月8日にリリースされました。" },
+  { cat:"onepiece", diff:"mid", q:"「新時代」がApple MusicのGlobal Top 100チャートで達成した記録は？",
+    choices:["10位以内","Top 5入り","日本語楽曲として初の1位","日本語楽曲として初のTop 3"],
+    ans:2, comment:"「新時代」はApple MusicのGlobal Top 100で日本語楽曲として史上初めて1位を獲得しました。" },
+  { cat:"onepiece", diff:"mid", q:"「私は最強」の英語タイトルは？",
+    choices:["I'm Unbeatable","I'm Invincible","I'm Almighty","I'm Unstoppable"],
+    ans:1, comment:"英語タイトルは「I'm Invincible」で、Billboard Japan Hot 100で最高2位を記録しました。" },
+  { cat:"onepiece", diff:"mid", q:"「ウタの歌 ONE PIECE FILM RED」アルバムからBillboard Japan Hot 100トップ3を独占した楽曲の組み合わせは？",
+    choices:["新時代・私は最強・逆光","うっせぇわ・新時代・踊","ギラギラ・新時代・逆光","踊・私は最強・新時代"],
+    ans:0, comment:"「新時代」「私は最強（I'm Invincible）」「逆光（Backlight）」の3曲でBillboard Japan Hot 100のトップ3を独占しました。" },
+  { cat:"onepiece", diff:"hard", q:"「ウタの歌 ONE PIECE FILM RED」でAdoが達成したOricon史上初の記録は？",
+    choices:["5曲同時トップ5ストリーミングチャートイン","3曲同時1位","アルバム最速100万枚","全曲1億再生"],
+    ans:0, comment:"Oricon史上初めて、1人のアーティストが5曲をストリーミングチャートのトップ5に同時にランクインさせました。" },
+  { cat:"onepiece", diff:"mid", q:"「ウタの歌 ONE PIECE FILM RED」アルバムの世界配信を行ったレーベルは？",
+    choices:["Sony Records","Def Jam","Geffen Records","Interscope"],
+    ans:2, comment:"Geffen Recordsと契約し、アルバムを世界配信しました。" },
+  { cat:"onepiece", diff:"hard", q:"「新時代」のBillboard Global 200での最高順位は？",
+    choices:["1位","5位","10位","20位"],
+    ans:3, comment:"「新時代」はBillboard Global 200で最高20位を記録しました。" },
+  { cat:"onepiece", diff:"mid", q:"ONE PIECE FILM REDでウタのセリフ部分を担当した声優は？",
+    choices:["坂本真綾","名塚佳織","日笠陽子","花澤香菜"],
+    ans:1, comment:"ウタのセリフ（非歌唱）部分は声優の名塚佳織が担当しました。" },
+  { cat:"onepiece", diff:"mid", q:"ONE PIECE FILM REDでAdoが歌唱を担当した楽曲の総数は？",
+    choices:["3曲","5曲","7曲","10曲"],
+    ans:2, comment:"主題歌・劇中歌を含む全7曲の歌唱を担当しました。" },
+
+  // ─── アルバム ───────────────────────────────────────────
+  { cat:"album", diff:"easy", q:"Adoの1stオリジナルアルバムのタイトルは？",
+    choices:["残夢","うっせぇわ","狂言","モナ・リザの横顔"],
+    ans:2, comment:"「狂言」は2022年1月26日にリリースされたAdoのメジャー1stアルバムです。" },
+  { cat:"album", diff:"mid", q:"1stアルバム「狂言」の初週物理販売枚数は？",
+    choices:["約5万枚","約14万枚以上","約50万枚","約100万枚"],
+    ans:1, comment:"「狂言」は初週に14万枚以上の物理CDを販売。これは2008年のSuperflyt以来、女性アーティストの1stアルバム最高記録でした。" },
+  { cat:"album", diff:"mid", q:"「狂言」の収録曲数は？",
+    choices:["10曲","12曲","14曲","16曲"],
+    ans:2, comment:"「狂言」には全14曲が収録されています。" },
+  { cat:"album", diff:"mid", q:"Adoの2ndオリジナルアルバムのタイトルは？",
+    choices:["炎上","残夢","新世界","幻想"],
+    ans:1, comment:"2ndオリジナルアルバム「残夢」は2024年7月にリリースされました。" },
+  { cat:"album", diff:"mid", q:"Adoのベストアルバム「Adoのベストアドバム」はいつ発売された？",
+    choices:["2024年10月","2025年4月","2025年7月","2023年1月"],
+    ans:1, comment:"メジャーデビュー5周年を記念した初のベストアルバム「Adoのベストアドバム」は2025年4月に発売されました。" },
+  { cat:"album", diff:"hard", q:"「狂言」がBillboard Japanアルバムチャートで達成した記録は？",
+    choices:["5位以内","2位","1位（デビューアルバム週間1位は2011年のmiwa以来初の女性）","ノミネートのみ"],
+    ans:2, comment:"「狂言」はBillboard Japan Hot AlbumsとOricon両方で初週1位を獲得。デビューアルバムが初週1位を獲得した女性アーティストは、2011年のmiwa「guitarissimo」以来でした。" },
+  { cat:"album", diff:"hard", q:"「狂言」のアナログレコード版がリリースされたのはいつ？",
+    choices:["2022年10月","2023年1月26日","2023年6月","2024年1月"],
+    ans:1, comment:"1stアルバム発売から1年後の2023年1月26日にアナログレコード版がリリースされました。" },
+  { cat:"album", diff:"mid", q:"「うたってみたアルバム」のカバーアートを担当したイラストレーターは？",
+    choices:["WOOM A","ORIHARA","LAM","Yunomi"],
+    ans:1, comment:"カバーアートはORIHARAが担当し、Adoがクローゼットで録音していた様子が描かれています。" },
+  { cat:"album", diff:"mid", q:"「ウタの歌 ONE PIECE FILM RED」はいつ発売された？",
+    choices:["2022年7月","2022年8月","2022年10月","2023年1月"],
+    ans:1, comment:"2022年8月にリリースされました。" },
+  { cat:"album", diff:"hard", q:"「Adoのベストアドバム」に収録された楽曲の総数は？",
+    choices:["20曲","30曲","40曲","50曲"],
+    ans:2, comment:"新曲を含む全40曲が収録された2枚組ベストアルバムです。" },
+
+  // ─── 記録・受賞 ─────────────────────────────────────────
+  { cat:"records", diff:"mid", q:"「うっせぇわ」でAdoが達成した、ソロ歌手としての記録は？",
+    choices:["Billboard Japan最年少1位","ストリーミング最年少1億再生達成（ソロ歌手）","CDシングル最短100万枚","YouTube最速10億再生"],
+    ans:1, comment:"Billboard Japanストリーミングで1億再生を達成したソロ歌手として最年少記録を打ち立てました。" },
+  { cat:"records", diff:"easy", q:"AdoがNHK紅白歌合戦に初出場したのは何年の大会？",
+    choices:["第72回（2021年）","第73回（2022年）","第74回（2023年）","第75回（2024年）"],
+    ans:2, comment:"第74回（2023年12月）のNHK紅白歌合戦に初出場しました。" },
+  { cat:"records", diff:"mid", q:"「新時代」がBillboard Japanで達成したOricon歴史的な記録は何か（Apple Musicについて）？",
+    choices:["日本語楽曲として初めてGlobal Top 100で1位","日本語楽曲として初めてアメリカのHot 100入り","日本語楽曲として初めて全世界100カ国でNo.1","日本語楽曲として初めてSpotifyグローバル1位"],
+    ans:0, comment:"Apple MusicのGlobal Top 100で日本語楽曲として史上初めて1位を獲得しました。" },
+  { cat:"records", diff:"hard", q:"「狂言」リリース前、女性アーティストとして1stアルバムが週間1位を獲得したのは誰・いつ以来？",
+    choices:["浜崎あゆみ・2000年","倉木麻衣・2005年","Superfly・2008年","miwa・2011年"],
+    ans:3, comment:"「狂言」が女性の1stアルバムとして初週1位を記録したのは、2011年のmiwa「guitarissimo」以来でした。※週間1位の基準はBillboard Japan Hot Albums。" },
+  { cat:"records", diff:"mid", q:"Billboard Japan Hot 100で同一アーティストがトップ3を独占した際のAdoの3曲は？",
+    choices:["うっせぇわ・ギラギラ・踊","新時代・私は最強・逆光","阿修羅ちゃん・踊・ギラギラ","新時代・うっせぇわ・踊"],
+    ans:1, comment:"「新時代」「私は最強（I'm Invincible）」「逆光（Backlight）」の3曲でトップ3を独占しました。" },
+  { cat:"records", diff:"hard", q:"「うっせぇわ」のMVがYouTubeで1億再生を達成した時点でリリースから何日が経過していた？",
+    choices:["78日","100日","148日","200日"],
+    ans:2, comment:"2020年10月23日リリース、2021年3月20日に1億再生達成で、148日後でした。" },
+  { cat:"records", diff:"mid", q:"Adoの2025年ワールドツアー「Hibana」が達成した記録は？",
+    choices:["日本人アーティストとして最多動員ツアー","日本人アーティストとして過去最大規模のグローバルツアー","アジアアーティスト史上最大のワールドツアー","女性アーティスト史上最速のワールドツアー"],
+    ans:1, comment:"「Ado WORLD TOUR 2025 'Hibana'」は日本人アーティストによる過去最大規模のグローバルツアーとして記録されています。" },
+  { cat:"records", diff:"mid", q:"「うっせぇわ」がリリースから何週間でBillboard Japanストリーミングで1億再生を達成した？",
+    choices:["8週","12週","17週","25週"],
+    ans:2, comment:"チャートイン後17週で1億再生を達成。これはBillboard Japan史上6番目の速さでした。" },
+  { cat:"records", diff:"hard", q:"Adoが「新時代」でBillboard Global 200に初ランクインした際の順位は？",
+    choices:["1位","5位","20位","50位"],
+    ans:2, comment:"「新時代」はBillboard Global 200で最高20位を記録しました。" },
+  { cat:"records", diff:"easy", q:"「うっせぇわ」がYouTube公開から1か月強で達成した再生回数は？",
+    choices:["100万回","500万回","1000万回","3000万回"],
+    ans:2, comment:"公開から1か月強で1,000万回を超える再生回数を記録し、その注目の高さがうかがえました。" },
+
+  // ─── ライブ・活動 ───────────────────────────────────────
+  { cat:"live", diff:"mid", q:"2024年4月にAdoが行った、女性ソロアーティスト初となるライブ会場は？",
+    choices:["東京ドーム","大阪城ホール","国立競技場","武道館"],
+    ans:2, comment:"2024年4月、女性ソロアーティストとして初めて国立競技場でのライブを開催しました。" },
+  { cat:"live", diff:"mid", q:"Adoの初のワールドツアーはいつから始まった？",
+    choices:["2023年4月","2024年2月","2024年10月","2025年1月"],
+    ans:1, comment:"2024年2月から初の世界ツアーが開始されました。" },
+  { cat:"live", diff:"easy", q:"2025年のAdoのワールドツアーの名称は？",
+    choices:["Ado World Tour 2025 'Hibana'","Ado Global Tour 'Kyogen'","Ado International Tour 'Zandou'","Ado World Tour 'Usseewa'"],
+    ans:0, comment:"「Ado WORLD TOUR 2025 'Hibana' Powered by Crunchyroll」が正式名称です。" },
+  { cat:"live", diff:"mid", q:"2024年7月に行われたAdoの初の全国ツアーの種別は？",
+    choices:["全国ホールツアー","全国アリーナツアー","全国ドームツアー","全国スタジアムツアー"],
+    ans:1, comment:"2024年7月に初の全国アリーナツアーを開催しました。" },
+  { cat:"live", diff:"hard", q:"2025年のHibanaワールドツアーのさいたまスーパーアリーナ公演はどのモードで行われた？",
+    choices:["アリーナモード","スタジアムモード","コンサートモード","特設ステージ"],
+    ans:1, comment:"さいたまスーパーアリーナのスタジアムモードで4月26日、27日に2日間開催されました。" },
+  { cat:"live", diff:"mid", q:"Adoが2026年7月に開催を予定しているコンサート会場は？",
+    choices:["東京ドーム","国立競技場","日産スタジアム","横浜アリーナ"],
+    ans:2, comment:"2026年7月4日・5日に神奈川・日産スタジアムでの公演が発表されています。" },
+  { cat:"live", diff:"easy", q:"Adoは顔出しをしているか？",
+    choices:["している（全SNSで公開）","している（一部メディアのみ）","していない（素顔を公開していない）","以前はしていたが現在は非公開"],
+    ans:2, comment:"Adoは活動全体を通じて素顔を公開していません。これが「謎に包まれた歌い手」としての個性の一つでもあります。" },
+  { cat:"live", diff:"mid", q:"Adoが2023年に初出場した年末の音楽番組は？",
+    choices:["FNS歌謡祭","レコード大賞","NHK紅白歌合戦","ミュージックステーション"],
+    ans:2, comment:"第74回NHK紅白歌合戦（2023年12月）に初出場しました。" },
+  { cat:"live", diff:"hard", q:"2025年末にAdoが初めて開催したツアー形式は？",
+    choices:["ホールツアー","アリーナツアー","ドームツアー","スタジアムツアー"],
+    ans:2, comment:"2025年11月に自身初のドームツアーを開催しました。" },
+  { cat:"live", diff:"hard", q:"Adoが「THE FIRST TAKE」でファントム・シータと共演したのは何年？",
+    choices:["2023年","2024年","2025年","2026年"],
+    ans:3, comment:"2026年の新年初回「THE FIRST TAKE」でAdoとファントム・シータが共演しました。" },
+
+  // ─── 追加総合問題 ────────────────────────────────────────
+  { cat:"profile", diff:"hard", q:"「狂言」というアルバムタイトルの由来となった日本の伝統芸能と、Adoの芸名の由来は共通している。この芸能は？",
+    choices:["能","歌舞伎","狂言","落語"],
+    ans:2, comment:"アルバム「狂言」も芸名「Ado」も、日本の伝統的なコメディ演劇「狂言」に由来しています。" },
+  { cat:"songs", diff:"mid", q:"映画「かぐや様は告らせたい ファイナル」の挿入歌として使用されたAdoの楽曲は？",
+    choices:["踊","うっせぇわ","ギラギラ","レディメイド"],
+    ans:0, comment:"「踊」は映画「かぐや様は告らせたい ～天才たちの恋愛頭脳戦～ ファイナル」の挿入歌にも使用されました。" },
+  { cat:"debut", diff:"hard", q:"Adoが音楽に興味を持ったのは何歳の時？",
+    choices:["10歳","12歳","14歳（小学6年生）","16歳"],
+    ans:2, comment:"小学6年生（2014年頃、約11〜12歳）にニコニコ動画でボカロや歌い手を知り興味を持ちました。" },
+  { cat:"songs", diff:"mid", q:"Adoが「ラブライブ！シリーズ15周年トリビュートアルバム」で担当した楽曲は？",
+    choices:["Snow halation","soldier game","START:DASH!!","No brand girls"],
+    ans:1, comment:"「LoveLive! Series 15th Anniversary Tribute Album」に「soldier game」を歌唱して参加しました。" },
+  { cat:"records", diff:"mid", q:"AdoがYouTubeチャンネル登録者数100万人を突破したのはいつ？",
+    choices:["2020年12月","2021年2月18日","2021年4月","2022年1月"],
+    ans:1, comment:"2021年2月18日にYouTubeチャンネル登録者数が100万人を突破しました。" },
+  { cat:"album", diff:"mid", q:"「うっせぇわ」のMVとジャケットイラストを手掛けたアーティストは？",
+    choices:["ORIHARA","WOOMA","LAM","こやまひろかず"],
+    ans:1, comment:"MVとジャケットイラストは人気イラストレーターのWOOMAが担当しました。" },
+  { cat:"onepiece", diff:"hard", q:"ONE PIECE FILM REDでウタのキャラクター設定（役割）は？",
+    choices:["ルフィの妹","伝説の歌姫","悪の組織の女幹部","ナミの姉"],
+    ans:1, comment:"ウタはONE PIECEの世界で「伝説の歌姫」として描かれたオリジナルキャラクターです。" },
+  { cat:"songs", diff:"hard", q:"「うっせぇわ」のMVのアーティスト写真を手掛けたイラストレーターは？",
+    choices:["WOOMA","ORIHARA","Yunomi","まふまふ"],
+    ans:1, comment:"アーティスト写真はORIHARAが担当しました（AdoのTwitter/YouTubeアイコンも同じ方です）。" },
+  { cat:"profile", diff:"easy", q:"Adoの活動スタイルで最も特徴的なことは何？",
+    choices:["ライブで常にダンスを踊る","素顔を公開しない","必ず複数人でユニット活動する","毎月CDをリリースする"],
+    ans:1, comment:"Adoは一貫して素顔を公開しないスタイルを保っています。これが「謎の歌い手」としての唯一無二の個性となっています。" },
+  { cat:"live", diff:"hard", q:"Adoが初めて自ら作詞・作曲した楽曲「ビバリウム」でも話題となった、2026年2月に公開されたコンテンツは？",
+    choices:["初の3Dライブ映像","自身初の実写MV","初のアニメMV","初の海外向けMV"],
+    ans:1, comment:"「ビバリウム」では自身初となる実写MVが公開されました。約300カットで紡いだ迫力ある映像が話題になりました。" },
+
+  // ─── 補足・応用問題（全カテゴリ） ──────────────────────
+  { cat:"debut", diff:"mid", q:"Adoがニコニコ動画に初投稿したのはいつ？",
+    choices:["2016年7月","2017年1月10日","2017年6月","2018年3月"],
+    ans:1, comment:"2017年1月10日に「君の体温」のカバーを投稿したのが最初でした。" },
+  { cat:"profile", diff:"mid", q:"Adoの事務所「Cloud Nine」が設立されたのは何年？",
+    choices:["2017年","2018年","2019年","2020年"],
+    ans:2, comment:"Cloud Nine Inc.は2019年に設立され、以降Adoのマネジメントをしています（©2019-2026表記より）。" },
+  { cat:"songs", diff:"easy", q:"Adoの楽曲の多くを作っているのはどういった人たちが多い？",
+    choices:["売れっ子ポップス作家","ボカロP（ボーカロイド系クリエイター）","洋楽アーティスト","アイドルプロデューサー"],
+    ans:1, comment:"syudou、teniwoha、jon-yakitory、Kurage-PなどボカロP出身のクリエイターが楽曲を提供しているのがAdoの大きな特徴です。" },
+  { cat:"records", diff:"easy", q:"「うっせぇわ」がBillboard Japan Hot 100の最高何位を記録した？",
+    choices:["3位","2位","1位","5位"],
+    ans:2, comment:"「うっせぇわ」は2021年3月にBillboard Japan Hot 100で1位を獲得しました。" },
+  { cat:"live", diff:"mid", q:"Adoがライブで顔を見せないために通常使用しているのは？",
+    choices:["アバター（VTuber形式）","仮面","スクリーン演出（シルエットや映像）","マスク"],
+    ans:2, comment:"ライブではスクリーンを使った映像演出やシルエット表現などで顔を見せずに歌唱するスタイルをとっています。" },
+  { cat:"songs", diff:"hard", q:"「踊」は何番目のシングルとしてリリースされた？",
+    choices:["2nd","3rd","4th","5th"],
+    ans:2, comment:"「踊」は2021年4月27日リリースの4thシングルです。" },
+  { cat:"album", diff:"hard", q:"「狂言」アナログ版の中面に使われたイラストは、どこで配布されたパンフレット用のものだったか？",
+    choices:["Adoのライブ会場","国立能楽堂","ユニバーサルミュージック社内イベント","武道館ライブ"],
+    ans:1, comment:"国立能楽堂にて配られたパンフレットのみで使用されたORIHARAによる書き下ろしイラストが使われました。" },
+  { cat:"records", diff:"hard", q:"Adoが「私は最強（I'm Invincible）」でOricon合算シングルチャートで達成した順位は？",
+    choices:["1位","2位","3位","5位"],
+    ans:2, comment:"「私は最強（I'm Invincible）」はOricon合算シングルチャートで3位を記録しました。" },
+  { cat:"profile", diff:"hard", q:"Adoが2020年3月にJon-Yakitoryの楽曲に参加する前、2019年に参加したKujiraのシングルのリリース日は？",
+    choices:["2019年9月1日","2019年12月23日","2019年6月10日","2019年3月15日"],
+    ans:1, comment:"Kujiraのデジタルシングル「金木犀」は2019年12月23日にリリースされました。" },
+  { cat:"debut", diff:"easy", q:"Adoがメジャーデビューした年は何年？",
+    choices:["2019年","2020年","2021年","2022年"],
+    ans:1, comment:"2020年10月にメジャーデビューしました。" },
+];
+
+let correctCount = 0;
+let answeredCount = 0;
+let currentFilter = 'all';
+
+const catLabels = {
+  profile: "🧑 プロフィール・人物",
+  debut: "🚀 デビュー・活動歴",
+  songs: "🎵 楽曲・ボカロP",
+  onepiece: "🏴‍☠️ ONE PIECE FILM RED",
+  album: "💿 アルバム・リリース",
+  records: "🏆 記録・受賞",
+  live: "🎤 ライブ・活動"
+};
+const catOrder = ["profile","debut","songs","onepiece","album","records","live"];
+
+function buildQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = '';
+  let lastCat = '';
+  let num = 0;
+
+  catOrder.forEach(cat => {
+    const qs = quizData.filter(q => q.cat === cat);
+    let header = null;
+    qs.forEach((q, i) => {
+      const globalIdx = quizData.indexOf(q);
+      num++;
+      if (cat !== lastCat) {
+        header = document.createElement('div');
+        header.className = 'category-header';
+        header.setAttribute('data-cat', cat);
+        header.textContent = catLabels[cat];
+        container.appendChild(header);
+        lastCat = cat;
+      }
+      const card = buildCard(q, globalIdx, num);
+      card.setAttribute('data-cat', cat);
+      container.appendChild(card);
+    });
+  });
+  updateProgress();
+}
+
+function buildCard(q, idx, num) {
+  const diff = q.diff === 'easy' ? '易' : q.diff === 'mid' ? '中' : '難';
+  const diffClass = q.diff === 'easy' ? 'diff-easy' : q.diff === 'mid' ? 'diff-mid' : 'diff-hard';
+
+  const card = document.createElement('div');
+  card.className = 'quiz-card';
+  card.id = 'card-' + idx;
+
+  card.innerHTML = `
+    <div class="q-row" onclick="toggleAnswer(${idx})">
+      <div class="q-num">Q${num}</div>
+      <div class="q-text">${q.q}</div>
+      <span class="difficulty ${diffClass}">${diff}</span>
+    </div>
+    <div class="answer-area" id="area-${idx}">
+      <div class="choices" id="choices-${idx}">
+        ${q.choices.map((c,i) => `<button class="choice-btn" onclick="select(event,${idx},${i})">${['A','B','C','D'][i]}. ${c}</button>`).join('')}
+      </div>
+      <div class="answer-reveal hidden" id="reveal-${idx}">
+        <div class="ans-label">✅ 正解：${q.choices[q.ans]}</div>
+        <div class="commentary">${q.comment}</div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function toggleAnswer(idx) {
+  const area = document.getElementById('area-' + idx);
+  area.classList.toggle('open');
+}
+
+function select(e, idx, chosen) {
+  e.stopPropagation();
+  const q = quizData[idx];
+  const btns = document.querySelectorAll(`#choices-${idx} .choice-btn`);
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === chosen) b.classList.add('wrong');
+  });
+  document.getElementById('reveal-' + idx).classList.remove('hidden');
+
+  const card = document.getElementById('card-' + idx);
+  if (!card.classList.contains('answered-correct') && !card.classList.contains('answered-wrong')) {
+    answeredCount++;
+    if (chosen === q.ans) {
+      correctCount++;
+      card.classList.add('answered-correct');
+    } else {
+      card.classList.add('answered-wrong');
+    }
+    document.getElementById('correct-count').textContent = correctCount;
+    document.getElementById('answered-count').textContent = answeredCount;
+    updateProgress();
+  }
+}
+
+function expandAll() {
+  document.querySelectorAll('.answer-area').forEach(a => {
+    if (a.closest('.quiz-card') && !a.closest('.quiz-card').classList.contains('hidden')) {
+      a.classList.add('open');
+    }
+  });
+}
+
+function resetAll() {
+  correctCount = 0; answeredCount = 0;
+  document.getElementById('correct-count').textContent = '0';
+  document.getElementById('answered-count').textContent = '0';
+  buildQuiz();
+  filterCat(currentFilter, document.querySelector('.filter-btns .active'));
+}
+
+function filterCat(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.quiz-card, .category-header').forEach(el => {
+    if (cat === 'all' || el.getAttribute('data-cat') === cat) {
+      el.classList.remove('hidden');
+    } else {
+      el.classList.add('hidden');
+    }
+  });
+}
+
+function updateProgress() {
+  const total = 100;
+  const pct = (answeredCount / total * 100).toFixed(0);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${answeredCount} / ${total} 問回答済み`;
+}
+
+buildQuiz();
+</script>
+</body>
+</html>
